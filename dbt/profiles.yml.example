@@ -1,0 +1,17 @@
+# Copy this file to %USERPROFILE%\.dbt\profiles.yml
+# and set the DBT_POSTGRES_* environment variables in your PowerShell session.
+# The password is intentionally not stored in this file.
+
+finbank:
+  target: dev
+  outputs:
+    dev:
+      type: postgres
+      host: "{{ env_var('DBT_POSTGRES_HOST', 'localhost') }}"
+      port: "{{ env_var('DBT_POSTGRES_PORT', '5432') | int }}"
+      user: "{{ env_var('DBT_POSTGRES_USER') }}"
+      password: "{{ env_var('DBT_POSTGRES_PASSWORD') }}"
+      dbname: "{{ env_var('DBT_POSTGRES_DB', 'finbank') }}"
+      schema: analytics
+      threads: 2
+      connect_timeout: 5

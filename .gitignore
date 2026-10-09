@@ -1,0 +1,60 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Packaging
+build/
+dist/
+*.egg-info/
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Generated data
+/data/generated/*
+
+# IDEs
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Database exports
+*.dump
+*.backup
+# dbt
+dbt/target/
+dbt/logs/
+dbt/dbt_packages/
+
+# Runtime analytics snapshots
+/data/analytics/*.json
+
+# Runtime monitoring state
+/data/metrics/*
+
+# Runtime dashboard output
+/data/dashboard/
+
+# End-to-end verification scratch data
+/data/e2e/
+
+# Local activation scripts (may contain credentials)
+activate_finbank.bat

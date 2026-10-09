@@ -1,0 +1,50 @@
+version: 2
+
+models:
+  - name: int_customer_transactions
+    description: "Transaction-grain enrichment that joins customer, account, and merchant context and computes historical behavior features without issuing fraud decisions."
+    columns:
+      - name: transaction_id
+        tests: [not_null, unique]
+      - name: customer_id
+        tests: [not_null]
+      - name: minutes_since_previous_transaction
+        description: "Elapsed minutes since the customer's previous transaction; null for the first transaction in the history."
+      - name: amount_to_prior_customer_avg
+        description: "Current transaction amount divided by the customer's prior transaction average; null when no prior history exists."
+      - name: previous_transaction_status
+        description: "Status of the customer's immediately previous transaction."
+      - name: previous_previous_transaction_status
+        description: "Status of the customer's second-most-recent transaction."
+
+  - name: int_daily_transactions
+    description: "Daily transaction aggregates by date, currency, country, and status."
+    columns:
+      - name: transaction_date
+        tests: [not_null]
+      - name: currency
+        tests:
+          - accepted_values:
+              values: ['EUR', 'GBP']
+      - name: transaction_count
+        tests: [not_null]
+
+  - name: int_fraud_candidates
+    description: |
+      Explainable fraud-rule evaluation at transaction grain. Applies six deterministic
+      analytical rules, produces individual rule flags, an additive capped risk score,
+      severity, and a human-readable reason. These are portfolio-analysis heuristics,
+      not production banking fraud controls.
+    columns:
+      - name: transaction_id
+        tests: [not_null, unique]
+      - name: customer_id
+        tests: [not_null]
+      - name: risk_score
+        tests: [not_null]
+      - name: severity
+        tests:
+          - accepted_values:
+              values: ['LOW', 'MEDIUM', 'HIGH']
+      - name: reason
+        tests: [not_null]

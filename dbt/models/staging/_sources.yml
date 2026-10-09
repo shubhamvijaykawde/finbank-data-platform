@@ -1,0 +1,37 @@
+version: 2
+
+sources:
+  - name: finbank_raw
+    description: "PostgreSQL raw ingestion layer populated by the FinBank Python ingestion pipeline."
+    schema: raw
+    tables:
+      - name: customers
+        description: "Raw customer master data."
+        columns:
+          - name: customer_id
+            tests: [not_null, unique]
+      - name: accounts
+        description: "Raw account master data."
+        columns:
+          - name: account_id
+            tests: [not_null, unique]
+          - name: customer_id
+            tests: [not_null]
+      - name: merchants
+        description: "Raw merchant master data."
+        columns:
+          - name: merchant_id
+            tests: [not_null, unique]
+      - name: transaction_events
+        description: "Durable raw transaction events captured from Kafka."
+        columns:
+          - name: event_id
+            tests: [not_null, unique]
+          - name: transaction_id
+            tests: [not_null, unique]
+          - name: kafka_topic
+            tests: [not_null]
+          - name: kafka_partition
+            tests: [not_null]
+          - name: kafka_offset
+            tests: [not_null]

@@ -1,0 +1,158 @@
+version: 2
+
+models:
+  - name: dim_customer
+    description: |
+      Customer dimension at customer grain: exactly one analytical row per customer.
+      Contains descriptive customer attributes used to slice transaction facts.
+    columns:
+      - name: customer_sk
+        description: "Deterministic warehouse surrogate key for the customer."
+        tests: [not_null, unique]
+      - name: customer_id
+        description: "Source/business key for the customer."
+        tests: [not_null, unique]
+      - name: customer_segment
+        tests:
+          - accepted_values:
+              values: ['standard', 'premium', 'private']
+
+  - name: dim_account
+    description: |
+      Account dimension at account grain: exactly one analytical row per account.
+      customer_sk links the account to its owning customer dimension row.
+    columns:
+      - name: account_sk
+        description: "Deterministic warehouse surrogate key for the account."
+        tests: [not_null, unique]
+      - name: account_id
+        description: "Source/business key for the account."
+        tests: [not_null, unique]
+      - name: customer_sk
+        description: "Foreign key to dim_customer.customer_sk."
+        tests:
+          - not_null
+          - relationships:
+              to: ref('dim_customer')
+              field: customer_sk
+
+  - name: dim_merchant
+    description: |
+      Merchant dimension at merchant grain: exactly one analytical row per merchant.
+    columns:
+      - name: merchant_sk
+        description: "Deterministic warehouse surrogate key for the merchant."
+        tests: [not_null, unique]
+      - name: merchant_id
+        description: "Source/business key for the merchant."
+        tests: [not_null, unique]
+
+  - name: dim_date
+    description: |
+      Calendar dimension at day grain. Covers every calendar day between the minimum
+      and maximum transaction dates currently present in the source transaction set.
+    columns:
+      - name: date_sk
+        description: "Integer calendar surrogate key in YYYYMMDD format."
+        tests: [not_null, unique]
+      - name: full_date
+        description: "Natural calendar date represented by the row."
+        tests: [not_null, unique]
+
+  - name: fact_transactions
+    description: |
+      Transaction fact at one-row-per-valid-ingested-transaction grain.
+      amount is additive only within a common currency; cross-currency totals require
+      an explicit FX normalization step that FinBank does not implement yet.
+      Kafka provenance remains available for traceability back to the event stream.
+    columns:
+      - name: transaction_sk
+        description: "Deterministic warehouse surrogate key for the transaction."
+        tests: [not_null, unique]
+      - name: event_id
+        description: "Kafka event identity."
+        tests: [not_null, unique]
+      - name: transaction_id
+        description: "Business transaction identifier; fact grain is one row per transaction ID."
+        tests: [not_null, unique]
+      - name: customer_sk
+        description: "Foreign key to dim_customer.customer_sk."
+        tests:
+          - not_null
+          - relationships:
+              to: ref('dim_customer')
+              field: customer_sk
+      - name: account_sk
+        description: "Foreign key to dim_account.account_sk."
+        tests:
+          - not_null
+          - relationships:
+              to: ref('dim_account')
+              field: account_sk
+      - name: merchant_sk
+        description: "Foreign key to dim_merchant.merchant_sk."
+        tests:
+          - not_null
+          - relationships:
+              to: ref('dim_merchant')
+              field: merchant_sk
+      - name: date_sk
+        description: "Foreign key to dim_date.date_sk."
+        tests:
+          - not_null
+          - relationships:
+              to: ref('dim_date')
+              field: date_sk
+      - name: amount
+        description: "Transaction amount in the row's currency. Do not sum across currencies without FX conversion."
+        tests: [not_null]
+      - name: currency
+        tests:
+          - accepted_values:
+              values: ['EUR', 'GBP']
+      - name: status
+        tests:
+          - accepted_values:
+              values: ['completed', 'pending', 'failed']
+
+  - name: fact_fraud_alerts
+    description: |
+      Fraud-alert fact at one-row-per-alerted-transaction grain. Each row represents
+      one valid transaction for which at least one explainable rule fired. A transaction
+      can have multiple triggered rules, aggregated into rule_triggered and reason.
+      Risk scoring is analytical demonstration logic, not a production banking control.
+    columns:
+      - name: fraud_alert_id
+        description: "Deterministic surrogate key for the fraud alert."
+        tests: [not_null, unique]
+      - name: transaction_id
+        description: "Business transaction identifier; one alert row per transaction."
+        tests:
+          - not_null
+          - unique
+          - relationships:
+              to: ref('fact_transactions')
+              field: transaction_id
+      - name: customer_id
+        description: "Customer associated with the alerted transaction."
+        tests:
+          - not_null
+          - relationships:
+              to: ref('dim_customer')
+              field: customer_id
+      - name: rule_triggered
+        description: "Semicolon-separated analytical rule codes that fired for the transaction."
+        tests: [not_null]
+      - name: risk_score
+        description: "Capped 0-100 analytical risk score formed by additive rule weights."
+        tests: [not_null]
+      - name: severity
+        tests:
+          - accepted_values:
+              values: ['LOW', 'MEDIUM', 'HIGH']
+      - name: reason
+        description: "Human-readable explanation of the rule evidence."
+        tests: [not_null]
+      - name: created_at
+        description: "Source event ingestion timestamp used as a deterministic alert-creation proxy."
+        tests: [not_null]

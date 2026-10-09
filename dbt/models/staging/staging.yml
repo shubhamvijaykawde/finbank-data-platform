@@ -1,0 +1,58 @@
+version: 2
+
+models:
+  - name: stg_customers
+    description: "Cleaned customer attributes at customer grain."
+    columns:
+      - name: customer_id
+        tests: [not_null, unique]
+      - name: customer_segment
+        tests:
+          - accepted_values:
+              values: ['standard', 'premium', 'private']
+
+  - name: stg_accounts
+    description: "Cleaned account attributes at account grain."
+    columns:
+      - name: account_id
+        tests: [not_null, unique]
+      - name: customer_id
+        tests:
+          - not_null
+          - relationships:
+              to: ref('stg_customers')
+              field: customer_id
+      - name: account_type
+        tests:
+          - accepted_values:
+              values: ['checking', 'savings']
+
+  - name: stg_merchants
+    description: "Cleaned merchant attributes at merchant grain."
+    columns:
+      - name: merchant_id
+        tests: [not_null, unique]
+
+  - name: stg_transactions
+    description: "Cleaned transaction events at one-row-per-ingested-transaction grain."
+    columns:
+      - name: event_id
+        tests: [not_null, unique]
+      - name: transaction_id
+        tests: [not_null, unique]
+      - name: customer_id
+        tests: [not_null]
+      - name: account_id
+        tests: [not_null]
+      - name: merchant_id
+        tests: [not_null]
+      - name: amount
+        tests: [not_null]
+      - name: currency
+        tests:
+          - accepted_values:
+              values: ['EUR', 'GBP']
+      - name: status
+        tests:
+          - accepted_values:
+              values: ['completed', 'pending', 'failed']
