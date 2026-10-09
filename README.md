@@ -56,6 +56,10 @@ flowchart TD
 **Currency is handled deliberately.** FinBank has no foreign-exchange normalization model, so EUR and GBP values are not added together. The dashboard can show a combined *count* view across currencies, but transaction-value totals are shown only for a selected currency.
 
 **Fraud-rate caveat:** Fraud rate reflects demonstration data engineered to exercise the rule engine, not a calibrated production fraud rate. The end-to-end generator intentionally targets suspicious customers, and the warehouse can contain cumulative data from multiple development runs.
+![FinBank Operations Dashboard](docs/EUR_1.png)
+![FinBank Operations Dashboard](docs/EUR_2.png)
+![FinBank Operations Dashboard](docs/EUR_3.png)
+
 
 ## Technology stack
 
@@ -74,7 +78,7 @@ flowchart TD
 
 ### Native Windows development
 
-The verified development environment is **Windows 10 Enterprise LTSC 2019, build 1809**, with native Kafka and PostgreSQL. Docker Desktop/WSL2 are not part of the canonical local workflow. The repository retains optional Docker Compose files for environments that support them, but the verified path uses native services.
+The verified development environment is **Windows 10 Enterprise LTSC 2019, build 1809**, with native Kafka and PostgreSQL. Docker Desktop/WSL2 are not part of the canonical local workflow.
 
 The local Kafka topology is intentionally small (single broker/controller, one partition, replication factor 1). It is suitable for development and demonstration—not high availability.
 
@@ -220,7 +224,6 @@ finbank-data-platform/
 ├── dashboard/       # Streamlit dashboard entry point
 ├── dbt/             # Staging, intermediate, marts, schema/singular tests
 ├── docs/            # Phase design notes and native Windows setup
-├── docker/          # Optional Compose alternatives; not the verified local path
 ├── scripts/         # CLI entry points, live E2E runner, pipeline, metrics
 ├── sql/             # Schema creation and database verification queries
 ├── src/finbank/     # Reusable Python implementation
