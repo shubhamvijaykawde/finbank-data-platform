@@ -56,9 +56,22 @@ flowchart TD
 **Currency is handled deliberately.** FinBank has no foreign-exchange normalization model, so EUR and GBP values are not added together. The dashboard can show a combined *count* view across currencies, but transaction-value totals are shown only for a selected currency.
 
 **Fraud-rate caveat:** Fraud rate reflects demonstration data engineered to exercise the rule engine, not a calibrated production fraud rate. The end-to-end generator intentionally targets suspicious customers, and the warehouse can contain cumulative data from multiple development runs.
-![FinBank Operations Dashboard](docs/EUR_1.png)
-![FinBank Operations Dashboard](docs/EUR_2.png)
-![FinBank Operations Dashboard](docs/EUR_3.png)
+
+## Dashboard
+
+Three stacked screenshots of the Streamlit dashboard under the **EUR** currency filter, scrolled top to bottom:
+
+![FinBank dashboard — banking KPIs and daily transaction volume](docs/EUR_1.png)
+
+*Banking view: total transaction value, count, average, active customers, and daily volume trend.*
+
+![FinBank dashboard — fraud alerts, fraud rate, and breakdowns by country and category](docs/EUR_2.png)
+
+*Fraud view: alert count, high-risk count, fraud rate, and where alerts concentrate.*
+
+![FinBank dashboard — operations panel](docs/EUR_3.png)
+
+*Operations view: processed vs rejected transactions, processing rate, pipeline failures, and last run status.*
 
 
 ## Technology stack
