@@ -55,7 +55,7 @@ flowchart TD
 
 **Currency is handled deliberately.** FinBank has no foreign-exchange normalization model, so EUR and GBP values are not added together. The dashboard can show a combined *count* view across currencies, but transaction-value totals are shown only for a selected currency.
 
-**Fraud-rate caveat:** Fraud rate reflects demonstration data engineered to exercise the rule engine, not a calibrated production fraud rate. The end-to-end generator intentionally targets suspicious customers, and the warehouse can contain cumulative data from multiple development runs.
+**Fraud-rate caveat:** Fraud rate depends on data scale. The 25-transaction smoke run produces an intentionally inflated rate because the generator targets suspicious customers. The 100,000-transaction scale run produces a **3.21%** alert rate, which is closer to plausible but still reflects synthetic data and heuristic rules — not a calibrated production fraud rate.
 
 ## Dashboard
 
@@ -103,11 +103,25 @@ The latest native-machine verification recorded for this repository was:
 |---|---|
 | Python suite with strict pytest markers and both integration flags enabled | **94 passed, 0 skipped, 0 warnings** |
 | dbt tests | **101 passed, 0 warnings, 0 errors** |
-| Live end-to-end run against native Kafka + PostgreSQL + dbt | **Passed**: `generated=25 raw=25 fact=25 fraud_alerts=25` |
+| Live E2E — smoke (25 transactions) | `generated=25 raw=25 fact=25` — quick regression after code changes |
+| Live E2E — scale (100,000 transactions, seed=4242) | `generated=100000 raw=100000 fact=100000 fraud_alerts=3214`, wall time 2068s |
+| Observed end-to-end throughput (100k run) | **~48 transactions/sec** on i3-7100U / 8 GB RAM |
 | dbt materialization regression | Two consecutive live `dbt build` runs passed |
 | Dashboard | Streamlit rendered All currencies, EUR, and GBP views after the PostgreSQL NULL-currency fix |
 
-The end-to-end run uses fresh transaction IDs and a unique Kafka topic. All 25 alerts in that demonstration run are consistent with the fixture being designed to exercise the fraud rules; this output must not be interpreted as a production fraud rate.
+The 100,000-transaction scale run exercised the full path — generator, Kafka producer, quality consumer, PostgreSQL ingestion, dbt build + test, and fraud analytics — against native services with no mocked components. Producer throughput was ~112 messages/sec; consumer ingestion was ~98 rows/sec; dbt built and tested the resulting fact table in under two minutes. The measured end-to-end bottleneck was per-message Kafka acknowledgement in the producer and per-row inserts with per-record offset commits in the consumer, not the transformation layer. Fraud alert counts on synthetic data are not production fraud rates.
+
+### Scaling observations
+
+At 100,000 transactions on an i3-7100U / 8 GB RAM:
+
+- **Producer:** ~112 msg/sec — single-threaded with per-message ack waiting
+- **Consumer:** ~98 rows/sec — per-row INSERT with per-record offset commit
+- **dbt run:** 86s — 13 models including a 100k-row fact table with physical PK/UNIQUE constraints
+- **dbt test:** 33s — 101 tests
+- **Total wall time:** 2068s (34.5 min)
+
+The transform layer is not the bottleneck. To push to 1M transactions the priority would be batching on the streaming side: async producer sends with `linger_ms`, multi-row `INSERT ... VALUES` in the consumer, and offset commits every N records. All three changes must preserve the existing idempotency guarantees (`ON CONFLICT DO NOTHING` on `event_id`, `transaction_id`, and `kafka_topic/partition/offset`).
 
 ## Run locally (Windows CMD)
 
